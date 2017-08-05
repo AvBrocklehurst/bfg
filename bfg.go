@@ -2,99 +2,97 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
-	"strings"
-	"unicode"
 )
 
-const a = "++++++ [ > ++++++++++ < - ] > +++++ . "
-const t = "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ . -- . >++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ."
-const r = ",[. > +++++ [ < - > -] < . . . ]"
-const test = "--[----->+<]>---.++++++++++++.+.+++++++++.+[-->+<]>+++.++[-->+++<]>.++++++++++++.+.+++++++++.-[-->+++++<]>++.[--->++<]>-.-----------."
-const time = ">+++++++++[<+++++++++++>-]<[>[-]>[-]<<[>+>+<<-]>>[<<+>>-]>>>[-]<<<+++++++++<[>>>+<<[>+>[-]<<-]>[<+>-]>[<<++++++++++>>>+<-]<<-<-]+++++++++>[<->-]>>+>[<[-]<<+>>>-]>[-]+<<[>+>-<<-]<<<[>>+>+<<<-]>>>[<<<+>>>-]>[<+>-]<<-[>[-]<[-]]>>+<[>[-]<-]<++++++++[<++++++<++++++>>-]>>>[>+>+<<-]>>[<<+>>-]<[<<<<<.>>>>>-]<<<<<<.>>[-]>[-]++++[<++++++++>-]<.>++++[<++++++++>-]<++.>+++++[<+++++++++>-]<.><+++++..--------.-------.>>[>>+>+<<<-]>>>[<<<+>>>-]<[<<<<++++++++++++++.>>>>-]<<<<[-]>++++[<++++++++>-]<.>+++++++++[<+++++++++>-]<--.---------.>+++++++[<---------->-]<.>++++++[<+++++++++++>-]<.+++..+++++++++++++.>++++++++[<---------->-]<--.>+++++++++[<+++++++++>-]<--.-.>++++++++[<---------->-]<++.>++++++++[<++++++++++>-]<++++.------------.---.>+++++++[<---------->-]<+.>++++++++[<+++++++++++>-]<-.>++[<----------->-]<.+++++++++++..>+++++++++[<---------->-]<-----.---.>>>[>+>+<<-]>>[<<+>>-]<[<<<<<.>>>>>-]<<<<<<.>>>++++[<++++++>-]<--.>++++[<++++++++>-]<++.>+++++[<+++++++++>-]<.><+++++..--------.-------.>>[>>+>+<<<-]>>>[<<<+>>>-]<[<<<<++++++++++++++.>>>>-]<<<<[-]>++++[<++++++++>-]<.>+++++++++[<+++++++++>-]<--.---------.>+++++++[<---------->-]<.>++++++[<+++++++++++>-]<.+++..+++++++++++++.>++++++++++[<---------->-]<-.---.>+++++++[<++++++++++>-]<++++.+++++++++++++.++++++++++.------.>+++++++[<---------->-]<+.>++++++++[<++++++++++>-]<-.-.---------.>+++++++[<---------->-]<+.>+++++++[<++++++++++>-]<--.+++++++++++.++++++++.---------.>++++++++[<---------->-]<++.>+++++[<+++++++++++++>-]<.+++++++++++++.----------.>+++++++[<---------->-]<++.>++++++++[<++++++++++>-]<.>+++[<----->-]<.>+++[<++++++>-]<..>+++++++++[<--------->-]<--.>+++++++[<++++++++++>-]<+++.+++++++++++.>++++++++[<----------->-]<++++.>+++++[<+++++++++++++>-]<.>+++[<++++++>-]<-.---.++++++.-------.----------.>++++++++[<----------->-]<+.---.[-]<<<->[-]>[-]<<[>+>+<<-]>>[<<+>>-]>>>[-]<<<+++++++++<[>>>+<<[>+>[-]<<-]>[<+>-]>[<<++++++++++>>>+<-]<<-<-]+++++++++>[<->-]>>+>[<[-]<<+>>>-]>[-]+<<[>+>-<<-]<<<[>>+>+<<<-]>>>[<<<+>>>-]<>>[<+>-]<<-[>[-]<[-]]>>+<[>[-]<-]<++++++++[<++++++<++++++>>-]>>>[>+>+<<-]>>[<<+>>-]<[<<<<<.>>>>>-]<<<<<<.>>[-]>[-]++++[<++++++++>-]<.>++++[<++++++++>-]<++.>+++++[<+++++++++>-]<.><+++++..--------.-------.>>[>>+>+<<<-]>>>[<<<+>>>-]<[<<<<++++++++++++++.>>>>-]<<<<[-]>++++[<++++++++>-]<.>+++++++++[<+++++++++>-]<--.---------.>+++++++[<---------->-]<.>++++++[<+++++++++++>-]<.+++..+++++++++++++.>++++++++[<---------->-]<--.>+++++++++[<+++++++++>-]<--.-.>++++++++[<---------->-]<++.>++++++++[<++++++++++>-]<++++.------------.---.>+++++++[<---------->-]<+.>++++++++[<+++++++++++>-]<-.>++[<----------->-]<.+++++++++++..>+++++++++[<---------->-]<-----.---.+++.---.[-]<<<]"
+type brainfuck struct {
+	source string
+	cells  []byte
+	cell   int
+}
+
+const memsize = 30000
 
 func main() {
-	data := strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, r)
-	err := run(data)
+	if len(os.Args) < 1 {
+		fmt.Println("No file provided")
+		os.Exit(2)
+	}
+
+	source, err := ioutil.ReadFile(os.Args[1])
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	bf := newBrainfuck(string(source))
+	err = bf.run()
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	fmt.Println("")
 }
 
-func format(fileName string) (data string, err error) {
+func newBrainfuck(source string) (bf brainfuck) {
+	bf.cells = make([]byte, memsize)
+	bf.source = source
 	return
 }
 
-func run(data string) (err error) {
-	cells := make([]int, 30000)
-	cell := 0
-
-	index := 0
-	pass := false
-	counterIndexs := []int{}
-	openBracketIndexs := []int{}
+func (bf brainfuck) run() (err error) {
+	depth := 0
 	var char rune
-	for index != len(data) {
-		if pass && data[index] != ']' {
-			continue
-		}
-		switch data[index] {
+	for index := 0; index < len(bf.source); index++ {
+		switch bf.source[index] {
 		case '+':
-			cells[cell]++
-			index++
+			bf.cells[bf.cell]++
 		case '-':
-			cells[cell]--
-			index++
+			bf.cells[bf.cell]--
 		case '>':
-			cell++
-			index++
+			bf.cell++
 		case '<':
-			cell--
-			index++
+			bf.cell--
 		case '.':
-			fmt.Printf("%c", cells[cell])
-			index++
+			fmt.Printf("%c", bf.cells[bf.cell])
 		case ',':
 			_, err = fmt.Scanf("%c", &char)
 			if err != nil {
 				return
 			}
-			cells[cell] = int(char)
-			index++
+			bf.cells[bf.cell] = byte(char)
 		case '[':
-			openBracketIndexs = append([]int{index}, openBracketIndexs...)
-			counterIndexs = append([]int{cell}, counterIndexs...)
-			if cells[counterIndexs[0]] != 0 {
+			if bf.cells[bf.cell] == 0 {
 				index++
-			} else {
-				pass = true
+				for depth > 0 || bf.source[index] != ']' {
+					if bf.source[index] == '[' {
+						depth++
+					} else if bf.source[index] == ']' {
+						depth--
+					}
+					index++
+				}
 			}
 		case ']':
-			if len(openBracketIndexs) == 0 {
-				err = fmt.Errorf("Unmatched closing bracket at index %d", index)
-				return
+			//When only at one bracket of depth and cell value is 0, can just move to next index
+			//rather than having to itterate back over to [ first
+			//TODO could calcuate at other depths whether this is possible
+			if depth > 0 && bf.cells[bf.cell] == 0 {
+				depth--
+				continue
 			}
-			if cells[counterIndexs[0]] != 0 {
-				index = openBracketIndexs[0] + 1
-			} else {
-				openBracketIndexs = openBracketIndexs[1:]
-				index++
+			index--
+			for depth > 0 || bf.source[index] != '[' {
+				if bf.source[index] == ']' {
+					depth++
+				} else if bf.source[index] == '[' {
+					depth--
+				}
+				index--
 			}
+			//Loop moves pointer back up one so move behind one (without evalutating) to ensure correct location
+			index--
 		}
-	}
-	if len(openBracketIndexs) > 0 {
-		locations := fmt.Sprintf("%d", openBracketIndexs[0])
-		for x := 0; x < len(openBracketIndexs)-1; x++ {
-			locations += fmt.Sprintf(" and %d", openBracketIndexs[x])
-		}
-		err = fmt.Errorf("\n%d unclosed brackets at index %s", len(openBracketIndexs), locations)
 	}
 	return
 }
